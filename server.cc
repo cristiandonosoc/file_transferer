@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <cstring>
 
 #ifdef __linux__
 
@@ -13,6 +14,12 @@
 INITIALIZE_EASYLOGGINGPP
 
 using namespace net_test;
+
+#define KILO 1024
+#define MEGA 1024 * 1024
+#define GIGA 1024 * 1024 * 1024
+
+uint8_t message[512 * KILO];
 
 int main(int argc, char **argv) {
   if (argc < 3) {
@@ -30,13 +37,22 @@ int main(int argc, char **argv) {
   if (!socket.Listen()) { return 1; }
 
   auto con_sock = socket.Accept();
-  uint8_t buffer[1500];
+  char buffer[1500];
   for(;;) {
-    int read = recv(con_sock->sock_fd, buffer, sizeof(buffer), 0);
+    int read = recv(con_sock->sock_fd, buffer, sizeof(buffer) - 1, 0);
     if (read == -1) {
       LOG(ERROR) << "Error reading: " << strerror(errno);
-
+    } else if (read == 0) {
+      LOG(INFO) << "Connection closed from " << con_sock->GetIpStr()
+        << ":" << con_sock->GetPort();
+      break;
+    } else {
+      buffer[read] = 0;
+      LOG(INFO) << "Read " << read << " bytes: " << buffer;
+      if (strcmp(buffer, "SEND") == 0) {
+        int sent = send(con_sock->sock_fd, message, sizeof(message), 0);
+        LOG(INFO) << "Sent " << sent << " bytes";
+      }
     }
-
   }
 }

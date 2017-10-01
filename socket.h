@@ -34,7 +34,6 @@ class Socket {
   const std::string& GetIpStr() const;
   uint16_t GetPort() const;
 
-
   // Socket Interface
  public:
   bool Create();
